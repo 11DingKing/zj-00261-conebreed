@@ -64,7 +64,7 @@ def init_data():
                 "experiment_station": "龙渠良种基地",
                 "generation": 3,
                 "target_traits": "耐寒、速生、抗虫",
-                "current_stage": "审定通过",
+                "current_stage": "国家良种",
                 "start_year": 2008,
                 "description": "经多世代选育的优良家系，综合性状优良"
             },
@@ -192,7 +192,7 @@ def init_data():
             db.add(db_record)
 
         certifications = [
-            # QHYS-2008-003 已审定通过
+            # QHYS-2008-003 省级审定通过
             {
                 "material_idx": 4,
                 "application_date": date(2021, 3, 15),
@@ -201,6 +201,17 @@ def init_data():
                 "result": "通过",
                 "result_date": date(2021, 12, 20),
                 "review_opinion": "经多世代选育，综合性状优良，区域试验表现稳定，同意通过省级审定",
+                "supplement_notes": None
+            },
+            # QHYS-2008-003 国家级审定通过
+            {
+                "material_idx": 4,
+                "application_date": date(2022, 4, 10),
+                "certification_level": "国家级",
+                "status": "已审",
+                "result": "通过",
+                "result_date": date(2022, 10, 15),
+                "review_opinion": "经多区域试点验证，性状表现稳定优良，同意通过国家级林木良种审定",
                 "supplement_notes": None
             },
             # QHYS-2015-001 准备申报

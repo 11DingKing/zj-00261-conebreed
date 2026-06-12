@@ -13,6 +13,10 @@ class StageEnum(str, Enum):
 
 class CertificationStatusEnum(str, Enum):
     pending = "待审"
+    reviewed = "已审"
+
+
+class CertificationResultEnum(str, Enum):
     passed = "通过"
     rejected = "未通过"
 
@@ -90,8 +94,8 @@ class StageRecord(StageRecordBase):
 class CertificationRecordBase(BaseModel):
     application_date: date
     certification_level: str = "省级"
-    status: str = "待审"
-    result: Optional[str] = None
+    status: CertificationStatusEnum = CertificationStatusEnum.pending
+    result: Optional[CertificationResultEnum] = None
     result_date: Optional[date] = None
     review_opinion: Optional[str] = None
     supplement_notes: Optional[str] = None
@@ -102,8 +106,8 @@ class CertificationRecordCreate(CertificationRecordBase):
 
 
 class CertificationRecordUpdate(BaseModel):
-    status: Optional[str] = None
-    result: Optional[str] = None
+    status: Optional[CertificationStatusEnum] = None
+    result: Optional[CertificationResultEnum] = None
     result_date: Optional[date] = None
     review_opinion: Optional[str] = None
     supplement_notes: Optional[str] = None
