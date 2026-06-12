@@ -12,6 +12,34 @@ def init_data():
             print("数据已存在，跳过初始化")
             return
 
+        families = [
+            {
+                "code": "LQ-F001",
+                "name": "龙祁核心家系",
+                "species": "青海云杉",
+                "description": "经多世代系统选育的优良家系，耐寒速生综合性状突出，是龙渠基地核心选育群体"
+            },
+            {
+                "code": "XS-F001",
+                "name": "西水抗逆家系",
+                "species": "青海云杉",
+                "description": "源自西水高海拔种群，耐寒抗虫性强，适应高海拔立地条件"
+            },
+            {
+                "code": "MCY-F001",
+                "name": "马场垣速生家系",
+                "species": "青海云杉",
+                "description": "马场垣试验站速生型选育家系，胸径生长量优势明显"
+            }
+        ]
+
+        created_families = []
+        for f in families:
+            db_family = models.Family(**f)
+            db.add(db_family)
+            db.flush()
+            created_families.append(db_family)
+
         materials = [
             {
                 "code": "QHYS-2015-001",
@@ -22,7 +50,8 @@ def init_data():
                 "target_traits": "耐寒、速生",
                 "current_stage": "区域试验",
                 "start_year": 2015,
-                "description": "大野口种群优良家系，耐寒性突出，生长量较对照高15%"
+                "description": "大野口种群优良家系，耐寒性突出，生长量较对照高15%",
+                "family_idx": 0
             },
             {
                 "code": "QHYS-2018-007",
@@ -33,7 +62,8 @@ def init_data():
                 "target_traits": "抗虫、速生",
                 "current_stage": "决选",
                 "start_year": 2018,
-                "description": "东大山种群初选优良单株，对云杉叶锈病抗性较强"
+                "description": "东大山种群初选优良单株，对云杉叶锈病抗性较强",
+                "family_idx": 1
             },
             {
                 "code": "QHYS-2020-015",
@@ -44,7 +74,8 @@ def init_data():
                 "target_traits": "耐寒、抗虫",
                 "current_stage": "复选",
                 "start_year": 2020,
-                "description": "本地优选家系，适应本地气候条件"
+                "description": "本地优选家系，适应本地气候条件",
+                "family_idx": 0
             },
             {
                 "code": "QHYS-2022-023",
@@ -55,7 +86,8 @@ def init_data():
                 "target_traits": "速生",
                 "current_stage": "初选",
                 "start_year": 2022,
-                "description": "冰沟种群速生型单株，初选生长表现优异"
+                "description": "冰沟种群速生型单株，初选生长表现优异",
+                "family_idx": 0
             },
             {
                 "code": "QHYS-2008-003",
@@ -66,7 +98,8 @@ def init_data():
                 "target_traits": "耐寒、速生、抗虫",
                 "current_stage": "国家良种",
                 "start_year": 2008,
-                "description": "经多世代选育的优良家系，综合性状优良"
+                "description": "经多世代选育的优良家系，综合性状优良",
+                "family_idx": 0
             },
             {
                 "code": "QHYS-2010-012",
@@ -77,7 +110,8 @@ def init_data():
                 "target_traits": "耐寒、抗虫",
                 "current_stage": "区域试验",
                 "start_year": 2010,
-                "description": "西水种群耐寒抗虫家系，高海拔适应性强"
+                "description": "西水种群耐寒抗虫家系，高海拔适应性强",
+                "family_idx": 1
             },
             {
                 "code": "QHYS-2016-009",
@@ -88,16 +122,45 @@ def init_data():
                 "target_traits": "速生",
                 "current_stage": "复选",
                 "start_year": 2016,
-                "description": "马场垣速生型单株，胸径生长量显著高于对照"
+                "description": "马场垣速生型单株，胸径生长量显著高于对照",
+                "family_idx": 2
             }
         ]
 
         created_materials = []
         for m in materials:
+            family_idx = m.pop("family_idx", None)
             db_material = models.BreedingMaterial(**m)
+            if family_idx is not None:
+                db_material.family_id = created_families[family_idx].id
             db.add(db_material)
             db.flush()
             created_materials.append(db_material)
+
+        parent_relations = [
+            {"child_idx": 0, "mother_idx": 2, "father_idx": 3},
+            {"child_idx": 4, "mother_idx": 0, "father_idx": None},
+            {"child_idx": 5, "mother_idx": 1, "father_idx": None},
+        ]
+
+        for rel in parent_relations:
+            child = created_materials[rel["child_idx"]]
+            if rel["mother_idx"] is not None:
+                child.mother_id = created_materials[rel["mother_idx"]].id
+            if rel["father_idx"] is not None:
+                child.father_id = created_materials[rel["father_idx"]].id
+
+        db.flush()
+
+        for i, family in enumerate(created_families):
+            if i == 0:
+                family.founder_id = created_materials[2].id
+            elif i == 1:
+                family.founder_id = created_materials[1].id
+            elif i == 2:
+                family.founder_id = created_materials[6].id
+
+        db.flush()
 
         stage_records = [
             # QHYS-2015-001 区域试验阶段
@@ -250,8 +313,8 @@ def init_data():
             db.add(db_variety)
 
         db.commit()
-        print(f"初始化完成：{len(created_materials)}份选育材料，{len(stage_records)}条阶段记录，"
-              f"{len(certifications)}条审定记录，{len(varieties)}个良种")
+        print(f"初始化完成：{len(created_families)}个家系，{len(created_materials)}份选育材料，"
+              f"{len(stage_records)}条阶段记录，{len(certifications)}条审定记录，{len(varieties)}个良种")
 
     finally:
         db.close()

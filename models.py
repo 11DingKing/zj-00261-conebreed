@@ -5,6 +5,20 @@ from sqlalchemy.sql import func
 from database import Base
 
 
+class Family(Base):
+    __tablename__ = "families"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(50), unique=True, index=True, nullable=False)
+    name = Column(String(100), nullable=False)
+    species = Column(String(100), nullable=False, default="青海云杉")
+    founder_id = Column(Integer, ForeignKey("breeding_materials.id"), nullable=True)
+    description = Column(Text, nullable=True)
+
+    founder = relationship("BreedingMaterial", foreign_keys=[founder_id], back_populates="founded_families")
+    materials = relationship("BreedingMaterial", foreign_keys="BreedingMaterial.family_id", back_populates="family")
+
+
 class BreedingMaterial(Base):
     __tablename__ = "breeding_materials"
 
@@ -18,6 +32,16 @@ class BreedingMaterial(Base):
     current_stage = Column(String(50), nullable=False, default="初选")
     start_year = Column(Integer, nullable=False)
     description = Column(Text, nullable=True)
+    mother_id = Column(Integer, ForeignKey("breeding_materials.id"), nullable=True)
+    father_id = Column(Integer, ForeignKey("breeding_materials.id"), nullable=True)
+    family_id = Column(Integer, ForeignKey("families.id"), nullable=True)
+
+    mother = relationship("BreedingMaterial", foreign_keys=[mother_id], remote_side=[id], back_populates="maternal_progeny")
+    father = relationship("BreedingMaterial", foreign_keys=[father_id], remote_side=[id], back_populates="paternal_progeny")
+    maternal_progeny = relationship("BreedingMaterial", foreign_keys=[mother_id], back_populates="mother")
+    paternal_progeny = relationship("BreedingMaterial", foreign_keys=[father_id], back_populates="father")
+    family = relationship("Family", foreign_keys=[family_id], back_populates="materials")
+    founded_families = relationship("Family", foreign_keys="Family.founder_id", back_populates="founder")
 
     stage_records = relationship("StageRecord", back_populates="material", cascade="all, delete-orphan")
     certifications = relationship("CertificationRecord", back_populates="material", cascade="all, delete-orphan")
