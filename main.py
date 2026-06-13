@@ -712,13 +712,8 @@ def get_family_pedigree_tree(family_id: int, db: Session = Depends(get_db)):
 
 # ==================== 统计接口 ====================
 
-def _count_in_selection(db: Session, materials: List[models.BreedingMaterial]) -> int:
-    count = 0
-    for m in materials:
-        if m.current_stage in IN_SELECTION_STAGES:
-            if not _has_variety(db, m.id):
-                count += 1
-    return count
+def _get_in_selection_materials(db: Session, materials: List[models.BreedingMaterial]) -> List[models.BreedingMaterial]:
+    return [m for m in materials if m.current_stage in IN_SELECTION_STAGES and not _has_variety(db, m.id)]
 
 
 @app.get("/stats/by-station", response_model=List[schemas.StationStats], summary="按试验站统计")
@@ -734,13 +729,15 @@ def stats_by_station(db: Session = Depends(get_db)):
             models.BreedingMaterial.experiment_station == station
         ).all()
 
-        in_selection_count = _count_in_selection(db, materials)
+        in_selection = _get_in_selection_materials(db, materials)
+        in_selection_count = len(in_selection)
         certified_count = db.query(models.Variety).join(models.BreedingMaterial).filter(
             models.BreedingMaterial.experiment_station == station
         ).count()
 
-        total_years = sum(2026 - m.start_year for m in materials)
-        avg_years = round(total_years / len(materials), 1) if materials else 0
+        current_year = date.today().year
+        total_years = sum(current_year - m.start_year for m in in_selection)
+        avg_years = round(total_years / in_selection_count, 1) if in_selection_count else 0
 
         result.append({
             "experiment_station": station,
@@ -761,13 +758,15 @@ def stats_by_trait(db: Session = Depends(get_db)):
             models.BreedingMaterial.target_traits.contains(trait)
         ).all()
 
-        in_selection_count = _count_in_selection(db, materials)
+        in_selection = _get_in_selection_materials(db, materials)
+        in_selection_count = len(in_selection)
         certified_count = db.query(models.Variety).join(models.BreedingMaterial).filter(
             models.BreedingMaterial.target_traits.contains(trait)
         ).count()
 
-        total_years = sum(2026 - m.start_year for m in materials)
-        avg_years = round(total_years / len(materials), 1) if materials else 0
+        current_year = date.today().year
+        total_years = sum(current_year - m.start_year for m in in_selection)
+        avg_years = round(total_years / in_selection_count, 1) if in_selection_count else 0
 
         result.append({
             "target_trait": trait,
@@ -801,13 +800,15 @@ def stats_by_family(db: Session = Depends(get_db)):
             })
             continue
 
-        in_selection_count = _count_in_selection(db, materials)
+        in_selection = _get_in_selection_materials(db, materials)
+        in_selection_count = len(in_selection)
         certified_count = db.query(models.Variety).join(models.BreedingMaterial).filter(
             models.BreedingMaterial.family_id == family.id
         ).count()
 
-        total_years = sum(2026 - m.start_year for m in materials)
-        avg_years = round(total_years / len(materials), 1)
+        current_year = date.today().year
+        total_years = sum(current_year - m.start_year for m in in_selection)
+        avg_years = round(total_years / in_selection_count, 1) if in_selection_count else 0
         max_gen = max(m.generation for m in materials)
 
         result.append({
